@@ -3,6 +3,7 @@ import numpy as np
 from flask import Flask, render_template, request, send_from_directory
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
+from werkzeug.utils import secure_filename
 from PIL import Image
 
 app = Flask(__name__)
@@ -65,7 +66,8 @@ def upload_file():
 		if file.filename == "":
 			return render_template("classify.html", error = "Tidak ada file yang dipilih.")
 		
-		image_path = os.path.join(UPLOAD_FOLDER, file.filename)
+		filename = secure_filename(file.filename).replace(" ", "_")
+		image_path = os.path.join(UPLOAD_FOLDER, filename)
 		file.save(image_path)
 
 		label, prob = process_and_predict(image_path)
@@ -73,7 +75,7 @@ def upload_file():
 
 		return render_template(
 			"classify.html",
-			image_file_name = file.filename,
+			image_file_name = filename,
 			label = label,
 			prob = prob,
 			manfaat = manfaat
