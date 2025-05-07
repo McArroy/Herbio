@@ -51,7 +51,7 @@ def process_and_predict(img_path):
 # Routing
 @app.route("/")
 def home():
-	return render_template("index.html")
+	return render_template("app.html")
 
 @app.route("/classify")
 def classify_page():
