@@ -5,6 +5,9 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 from werkzeug.utils import secure_filename
 from PIL import Image
+from flask import redirect, url_for
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -67,7 +70,7 @@ def classify_page():
 @app.route("/classify", methods = ["POST", "GET"])
 def upload_file():
 	if request.method == "GET":
-		return render_template("classify.html")
+		return redirect(url_for("home"))
 	else:
 		file = request.files["image"]
 		if (file.filename == ""):
@@ -75,24 +78,30 @@ def upload_file():
 		elif (not allowed_file(file.filename)):
 			return render_template("app.html", error = "File tidak valid. Gunakan JPG atau PNG.")
 		
-		filename = secure_filename(file.filename).replace(" ", "_")
-		image_path = os.path.join(UPLOAD_FOLDER, filename)
-		file.save(image_path)
+		img = Image.open(file.stream).convert("RGB")
+		img = img.resize((128, 128))
+		img_array = image.img_to_array(img)
+		img_array = np.expand_dims(img_array, axis = 0) / 255.0
 
-		label, prob = process_and_predict(image_path)
+		prediction = model.predict(img_array)
+		class_idx = np.argmax(prediction, axis = 1)[0]
+		prob = round(prediction[0][class_idx] * 100, 2)
+		label = class_labels[class_idx]
 		manfaat = manfaat_dict.get(label, "Manfaat dari daun ini belum tersedia.")
+
+		# Encode gambar asli ke base64 untuk ditampilkan
+		buffered = BytesIO()
+		img.save(buffered, format = "JPEG")
+		encoded_img = base64.b64encode(buffered.getvalue()).decode("utf-8")
+		image_data = f"data:image/jpeg;base64,{encoded_img}"
 
 		return render_template(
 			"classify.html",
-			image_file_name = filename,
+			image_file_name = image_data,
 			label = label,
 			prob = prob,
 			manfaat = manfaat
 		)
-
-@app.route("/classify/<filename>")
-def send_file(filename):
-	return send_from_directory(UPLOAD_FOLDER, filename)
 
 if (__name__ == "__main__"):
 	app.debug = True
