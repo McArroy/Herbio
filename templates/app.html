@@ -292,6 +292,13 @@
 				}
 			});
 		</script>
+
+		<script>
+			const error = "{{ error|safe }}";
+			
+			if (error)
+				alert(error);
+		</script>
 </body>
 
 </html>

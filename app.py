@@ -11,7 +11,10 @@ app = Flask(__name__)
 # Konfigurasi direktori
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-MODEL_PATH = os.path.join(BASE_DIR, "static", "models", "cnn_model_daun.h5")
+MODEL_PATH = os.path.join(BASE_DIR, "static", "models", "mobilenetv2_finetune_model_daun.h5")
+
+# Konfigurasi files
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok = True)
 
@@ -38,7 +41,7 @@ manfaat_dict = {
 	"Teh Hijau":		"Teh hijau telah lama digunakan dalam pengobatan Tiongkok dan Jepang sebagai minuman penyembuh. Kandungan katekin—terutama EGCG (Epigallocatechin Gallate)—adalah senyawa aktif utama yang berfungsi sebagai antioksidan kuat. EGCG telah terbukti secara ilmiah membantu menghambat pertumbuhan sel kanker, menurunkan kolesterol, serta mencegah pembentukan plak arteri yang dapat menyebabkan penyakit jantung.\n\n Selain itu, teh hijau meningkatkan metabolisme tubuh, mendukung pembakaran lemak, dan membantu mengontrol berat badan. Efek stimulannya pada sistem saraf membuatnya berguna untuk meningkatkan kewaspadaan dan daya konsentrasi, tanpa menyebabkan ketegangan seperti kopi. Teh hijau juga memiliki efek menenangkan berkat kandungan L-theanine yang membantu relaksasi otak. Dengan manfaatnya yang sangat luas, teh hijau menjadi bagian penting dari gaya hidup sehat masa kini."
 }
 
-# Fungsi klasifikasi
+# Fungsi Klasifikasi
 def process_and_predict(img_path):
 	img = image.load_img(img_path, target_size = (128, 128))
 	img_array = image.img_to_array(img)
@@ -47,6 +50,10 @@ def process_and_predict(img_path):
 	class_idx = np.argmax(prediction, axis = 1)[0]
 	prob = round(prediction[0][class_idx] * 100, 2)
 	return class_labels[class_idx], prob
+
+# Fungsi Input Files
+def allowed_file(filename):
+	return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Routing
 @app.route("/")
@@ -63,8 +70,10 @@ def upload_file():
 		return render_template("classify.html")
 	else:
 		file = request.files["image"]
-		if file.filename == "":
-			return render_template("classify.html", error = "Tidak ada file yang dipilih.")
+		if (file.filename == ""):
+			return render_template("app.html", error = "Tidak ada file yang dipilih.")
+		elif (not allowed_file(file.filename)):
+			return render_template("app.html", error = "File tidak valid. Gunakan JPG atau PNG.")
 		
 		filename = secure_filename(file.filename).replace(" ", "_")
 		image_path = os.path.join(UPLOAD_FOLDER, filename)
