@@ -78,11 +78,15 @@ def upload_file():
 	elif (not allowed_file(file.filename)):
 		return render_template("app.html", error = "File tidak valid. Gunakan JPG atau PNG.")
 	
+	# Proses gambar dari file
 	img = Image.open(file.stream).convert("RGB")
-	img = img.resize((128, 128))
-	img_array = image.img_to_array(img)
+
+	# Resize dan prediksi
+	img_resized = img.resize((128, 128))
+	img_array = image.img_to_array(img_resized)
 	img_array = np.expand_dims(img_array, axis = 0) / 255.0
 
+	# Prediksi model
 	prediction = model.predict(img_array)
 	class_idx = np.argmax(prediction, axis = 1)[0]
 	prob = round(prediction[0][class_idx] * 100, 2)
