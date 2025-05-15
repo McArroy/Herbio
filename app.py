@@ -72,40 +72,44 @@ def upload_file():
 	if request.method == "GET":
 		return redirect(url_for("home"))
 	
-	file = request.files["image"]
-	if (file.filename == ""):
-		return render_template("app.html", error = "Tidak ada file yang dipilih.")
-	elif (not allowed_file(file.filename)):
-		return render_template("app.html", error = "File tidak valid. Gunakan JPG atau PNG.")
-	
-	# Proses gambar dari file
-	img = Image.open(file.stream).convert("RGB")
+	try:
+		file = request.files["image"]
+		if file.filename == "":
+			return render_template("app.html", error = "Tidak ada file yang dipilih.")
+		elif not allowed_file(file.filename):
+			return render_template("app.html", error = "File tidak valid. Gunakan JPG atau PNG.")
 
-	# Resize dan prediksi
-	img_resized = img.resize((128, 128))
-	img_array = image.img_to_array(img_resized)
-	img_array = np.expand_dims(img_array, axis = 0) / 255.0
+		# Proses gambar dari file
+		img = Image.open(file.stream).convert("RGB")
 
-	# Prediksi model
-	prediction = model.predict(img_array)
-	class_idx = np.argmax(prediction, axis = 1)[0]
-	prob = round(prediction[0][class_idx] * 100, 2)
-	label = class_labels[class_idx]
-	manfaat = manfaat_dict.get(label, "Manfaat dari daun ini belum tersedia.")
+		# Resize dan prediksi
+		img_resized = img.resize((128, 128))
+		img_array = image.img_to_array(img_resized)
+		img_array = np.expand_dims(img_array, axis = 0) / 255.0
 
-	# Encode gambar asli ke base64 untuk ditampilkan
-	buffered = BytesIO()
-	img.save(buffered, format = "JPEG")
-	encoded_img = base64.b64encode(buffered.getvalue()).decode("utf-8")
-	image_data = f"data:image/jpeg;base64,{encoded_img}"
+		# Prediksi model
+		prediction = model.predict(img_array)
+		class_idx = np.argmax(prediction, axis = 1)[0]
+		prob = round(prediction[0][class_idx] * 100, 2)
+		label = class_labels[class_idx]
+		manfaat = manfaat_dict.get(label, "Manfaat dari daun ini belum tersedia.")
 
-	return render_template(
-		"classify.html",
-		image_file_name = image_data,
-		label = label,
-		prob = prob,
-		manfaat = manfaat
-	)
+		# Encode gambar asli ke base64
+		buffered = BytesIO()
+		img.save(buffered, format = "JPEG")
+		encoded_img = base64.b64encode(buffered.getvalue()).decode("utf-8")
+		image_data = f"data:image/jpeg;base64,{encoded_img}"
+
+		return render_template(
+			"classify.html",
+			image_file_name=image_data,
+			label=label,
+			prob=prob,
+			manfaat=manfaat
+		)
+
+	except Exception as e:
+		return f"<h1>Terjadi error:</h1><pre>{str(e)}</pre>", 500
 
 if (__name__ == "__main__"):
 	app.debug = True
