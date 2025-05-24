@@ -46,7 +46,7 @@ manfaat_dict = {
 
 # Fungsi Klasifikasi
 def process_and_predict(img_path):
-	img = image.load_img(img_path, target_size = (128, 128))
+	img = image.load_img(img_path, target_size = (224, 224))
 	img_array = image.img_to_array(img)
 	img_array = np.expand_dims(img_array, axis = 0) / 255
 	prediction = model.predict(img_array)
